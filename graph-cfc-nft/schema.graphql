@@ -1,0 +1,6 @@
+type NFTIssued @entity {
+  id: ID!
+  to: Bytes!
+  uri: Bytes!
+  amount: BigInt
+}

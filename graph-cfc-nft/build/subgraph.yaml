@@ -1,0 +1,33 @@
+specVersion: 0.0.4
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: PayForSuccess
+    network: rinkeby
+    source:
+      address: "0xa403012e7C9395C2EB7dBFac33BE83ef8b890fbC"
+      abi: PayForSuccess
+      startBlock: 10911447
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - AssetReceived
+        - ClinialResult
+        - NFTIssued
+        - SignedClinicalResult
+      abis:
+        - name: PayForSuccess
+          file: PayForSuccess/abis/PayForSuccess.json
+      eventHandlers:
+        - event: AssetReceived(indexed address,uint256,indexed address,uint8)
+          handler: handleAssetReceived
+        - event: ClinialResult(indexed address,indexed string,uint32,uint8)
+          handler: handleClinialResult
+        - event: NFTIssued(indexed address,uint256,address,indexed string,uint8)
+          handler: handleNFTIssued
+        - event: SignedClinicalResult(indexed address,string,uint32,string,bytes[],indexed uint8)
+          handler: handleSignedClinicalResult
+      file: PayForSuccess/PayForSuccess.wasm
