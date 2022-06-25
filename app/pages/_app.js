@@ -1,9 +1,7 @@
-import '../styles/globals.css'
-import { MoralisProvider } from "react-moralis";
+import "../styles/globals.css"
+import { MoralisProvider } from "react-moralis"
 import { NotificationProvider } from "web3uikit"
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client"
-//const APP_ID=process.env.NEXT_PUBLIC_MORALIS_APP_ID
-//const SERVER_URL=process.env.NEXT_PUBLIC_MORALIS_SERVER_URL
 
 const client = new ApolloClient({
   cache: new InMemoryCache(),
@@ -16,7 +14,7 @@ function MyApp({ Component, pageProps }) {
     <MoralisProvider initializeOnMount={false}>
       <ApolloProvider client={client}>
         <NotificationProvider>
-            <Component {...pageProps} />
+          <Component {...pageProps} />
         </NotificationProvider>
       </ApolloProvider>
     </MoralisProvider>
@@ -24,3 +22,5 @@ function MyApp({ Component, pageProps }) {
 }
 
 export default MyApp
+
+//{typeof window === "undefined" ? null : <Component {...pageProps} />}

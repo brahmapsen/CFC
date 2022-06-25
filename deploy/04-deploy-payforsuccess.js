@@ -22,10 +22,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     gasPrice: 50000000000,
   })
 
-  if (chainId != 31337) {
-    log("Verifying....")
-    await verify(pay4Success.address, args)
-  }
+  // if (chainId != 31337) {
+  //   log("Verifying....")
+  //   await verify(pay4Success.address, args)
+  // }
 }
 
 module.exports.tags = ["all", "pfs"]

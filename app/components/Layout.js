@@ -9,3 +9,5 @@ export default function Layout({ children }, isProfile) {
     </React.Fragment>
   )
 }
+
+//{typeof window === "undefined" ? null : {children} />}

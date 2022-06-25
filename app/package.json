@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "moralis:sync": "moralis-admin-cli connect-local-devchain --chain hardhat --moralisSubdomain al2kcpypcrfs.usemoralis.com --frpcPath ./frp/frpc"
+    "lint": "next lint"
   },
   "dependencies": {
     "@apollo/client": "^3.6.7",
@@ -15,6 +14,8 @@
     "@superfluid-finance/js-sdk": "^0.6.1",
     "@walletconnect/web3-provider": "^1.7.8",
     "@web3auth/web3auth": "^1.0.0-alpha.0",
+    "@worldcoin/id": "^0.3.0",
+    "axios": "^0.27.2",
     "graphql": "^16.5.0",
     "magic-sdk": "^8.1.1",
     "moralis": "^1.7.0",

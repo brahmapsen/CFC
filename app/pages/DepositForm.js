@@ -10,12 +10,16 @@ import NFTBox from "../components/NFTBox"
 import GET_ACTIVE_ITEMS from "../constants/subgraphQueries"
 import { useQuery } from "@apollo/client"
 
+import worldID from "@worldcoin/id"
+
 import { useNotification } from "web3uikit"
 
 import basicCFCNftAbi from "../constants/BasicCFCNft.json"
 
 //Should be replacec with call from the Basic NFT contract.
 const TOKEN_URI = "ipfs://QmSumRkgBY7PzatJ6ncYdZUdo3h6w6efHEvitUPArDaiB6"
+
+const WORLD_ACTION_ID = "wid_staging_d9aea2f0102f32491212d1b0846fc15f"
 
 export default function DepositForm() {
   const { chainId, isWeb3Enabled, account } = useMoralis()
@@ -42,7 +46,14 @@ export default function DepositForm() {
   const [totalTokenDeposited, setTotalTokenDeposited] = useState("0")
   const [userEthAmount, setUserEthAmount] = useState("")
   const [contractEthAmount, setContractEthAmount] = useState("")
-  const [issueNFT, setIssueNFT] = useState("0")
+
+  function getWorldID() {
+    worldID.init("world-id-container", {
+      enable_telemetry: true,
+      action_id: WORLD_ACTION_ID, // <- use the address from the Developer Portal
+      signal: "CFC",
+    })
+  }
 
   //view functions
   const { runContractFunction: getContractName } = useWeb3Contract({
@@ -83,11 +94,12 @@ export default function DepositForm() {
     params: {},
   })
 
+  // MINTS NFT and triggers the NFTIssued event in PayForSuccess CONTRACT
   async function mintNFT() {
     console.log("\n.....................Minting NFT")
     const tokenId = await mintbasicCFCNFT({
       onError: (error) => console.log(error),
-      onSuccess: () => {
+      onSuccess: (tokenId) => {
         handleSuccess(tokenId)
       },
     })
@@ -106,22 +118,17 @@ export default function DepositForm() {
     const tx = await runContractFunction({
       params: nftIssuedOptions,
       onError: (error) => console.log(error),
-      onSuccess: () => {
+      onSuccess: (tx) => {
         handleSuccess(tx)
       },
     })
   }
 
-  //Toggle Issue NFT switch
-  function handleIssueNft() {
-    issueNFT ? setIssueNFT(0) : setIssueNFT(1)
-    console.log(".................", issueNFT)
-  }
-
   async function handleDeposit(data) {
     const token = data.data[0].inputResult
     const amtToApprove = data.data[1].inputResult
-    console.log(" Token - ", token, " amt:", amtToApprove)
+    const nftToBeIssued = data.data[2].inputResult.length
+    console.log(" Token - ", token, " amt:", amtToApprove, " NFT Checkbox:", nftToBeIssued)
 
     if (token === "PFS Token") {
       approveOptions.params = {
@@ -137,6 +144,7 @@ export default function DepositForm() {
         },
       })
     } else {
+      //Deposit ETH
       depositEthOptions.params = {
         value: amtToApprove * 10e17,
       }
@@ -145,10 +153,14 @@ export default function DepositForm() {
       const tx = await runContractFunction({
         params: depositEthOptions,
         onError: (error) => console.log(error),
-        onSuccess: () => {
+        onSuccess: (tx) => {
           handleSuccess(tx)
         },
       })
+    }
+    //
+    if (nftToBeIssued == 1) {
+      const tx = await mintNFT()
     }
   }
 
@@ -162,7 +174,7 @@ export default function DepositForm() {
     const tx = await runContractFunction({
       params: depositOptions,
       onError: (error) => console.log(error),
-      onSuccess: () => {
+      onSuccess: (tx) => {
         handleSuccess(tx)
       },
     })
@@ -216,9 +228,9 @@ export default function DepositForm() {
 
   // Probably could add some error handling
   const handleSuccess = async (tx) => {
-    // if (chainString != 31337) {
-    //   await tx.wait(1)
-    // }
+    if (chainString != 31337) {
+      await tx.wait(1)
+    }
     handleNewNotification(tx)
     updateUI()
   }
@@ -246,11 +258,13 @@ export default function DepositForm() {
   useEffect(() => {
     if (isWeb3Enabled) {
       updateUI()
+      getWorldID()
     }
-  }, [])
+  }, [userDepositAmt, userEthAmount])
 
   return (
     <Layout>
+      <div id="world-id-container"></div>
       <div>
         {" "}
         <div>
@@ -275,16 +289,6 @@ export default function DepositForm() {
         <br />
         <div>
           <Input label="ETH funded by User:" name="contract-total-cfc" value={userEthAmount} />
-        </div>
-        <br />
-        <div>
-          <Checkbox
-            id="issue-nft-checkbox"
-            label="Issue NFT?"
-            name="Issue NFT"
-            onBlur={function noRefCheck() {}}
-            onChange={handleIssueNft}
-          />
         </div>
         <br />
         <Form
@@ -316,20 +320,26 @@ export default function DepositForm() {
               value: "",
               key: "amountToStake",
             },
+            {
+              name: "issue-nft",
+              options: ["Do you like NFT to be issued?"],
+              type: "box",
+              value: "issueNft",
+            },
           ]}
           title="Donate!!!"
         ></Form>
       </div>
 
       <div>
-        <Button
+        {/* <Button
           id="mint-nft"
           onClick={mintNFT}
           size="medium"
           text="Mint NFT for Donation"
           theme="primary"
           type="button"
-        />
+        /> */}
 
         {/* <NFT
               address="0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB"
