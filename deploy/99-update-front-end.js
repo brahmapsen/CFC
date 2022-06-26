@@ -51,6 +51,7 @@ async function updateContractAddresses() {
   let chainId = 31337
   if (network.name != "localhost") {
     chainId = network.config.chainId.toString()
+    console.log("Chain ID:", chainId)
   }
   const contractAddresses = JSON.parse(fs.readFileSync(frontEndContractsFile, "utf8"))
   if (typeof contractAddresses == "undefined") {

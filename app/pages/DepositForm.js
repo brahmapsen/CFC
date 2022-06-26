@@ -9,8 +9,8 @@ import networkMapping from "../constants/networkMapping.json"
 import NFTBox from "../components/NFTBox"
 import GET_ACTIVE_ITEMS from "../constants/subgraphQueries"
 import { useQuery } from "@apollo/client"
-
-import worldID from "@worldcoin/id"
+import dynamic from "next/dynamic"
+const worldID = dynamic(() => import("@worldcoin/id"), { ssr: false })
 
 import { useNotification } from "web3uikit"
 
@@ -47,12 +47,23 @@ export default function DepositForm() {
   const [userEthAmount, setUserEthAmount] = useState("")
   const [contractEthAmount, setContractEthAmount] = useState("")
 
-  function getWorldID() {
-    worldID.init("world-id-container", {
-      enable_telemetry: true,
-      action_id: WORLD_ACTION_ID, // <- use the address from the Developer Portal
-      signal: "CFC",
-    })
+  async function getWorldID() {
+    if (!worldID.isInitialized()) {
+      worldID.init("world-id-container", {
+        //enable_telemetry: true,
+        action_id: WORLD_ACTION_ID, // <- use the address from the Developer Portal
+        signal: "CFC",
+      })
+    }
+
+    //verify
+    try {
+      const result = await worldID.enable() // <- Pass this `result` to your backend or smart contract (see below)
+      console.log("World ID verified successfully!")
+    } catch (failure) {
+      console.warn("World ID verification failed:", failure)
+      // Re-activate here so your end user can try again
+    }
   }
 
   //view functions
@@ -260,7 +271,7 @@ export default function DepositForm() {
       updateUI()
       getWorldID()
     }
-  }, [userDepositAmt, userEthAmount])
+  }, [isWeb3Enabled])
 
   return (
     <Layout>
@@ -360,11 +371,11 @@ export default function DepositForm() {
             loading || !listedNfts ? (
               <div>Loading...</div>
             ) : (
-              listedNfts.activeItems.map((nft) => {
+              listedNfts.activeItems.map((nft, index) => {
                 //console.log(nft)
                 const { price, nftAddress, tokenId, seller } = nft
                 return (
-                  <div>
+                  <div key={index}>
                     <NFTBox
                       price={price}
                       nftAddress={nftAddress}
