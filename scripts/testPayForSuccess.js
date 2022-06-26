@@ -37,10 +37,10 @@ async function main() {
   )
 
   //Approve and deposit PFST token to contract
-  console.log("Approve and deposit Asset")
-  await pfstTokenContract.approve(CONTRACT_ADDRESS, 1)
-  const txDepo = await pfsContract.depositAssets(1, PFST_TOKEN_ADDRESS)
-  const txDepoReceipt = await txDepo.wait(1)
+  // console.log("Approve and deposit Asset")
+  // await pfstTokenContract.approve(CONTRACT_ADDRESS, 1, { gasLimit: 3e6 })
+  // const txDepo = await pfsContract.depositAssets(1, PFST_TOKEN_ADDRESS, { gasLimit: 3e6 })
+  // const txDepoReceipt = await txDepo.wait(1)
 
   //Display Wallet balance
   console.log("Display Signer (", signer.address, ") balance ")
@@ -52,9 +52,9 @@ async function main() {
   console.log("contract ETH Balance :", ethers.utils.formatEther(contractETHBalance))
 
   //Deposit 0.001 ETH and Contract ETH balance
-  console.log("Deposit .001 ETH")
-  const tx = await pfsContract.depositEth({ value: _weiValue })
-  const txReceipt = await tx.wait(1)
+  // console.log("Deposit .001 ETH")
+  // const tx = await pfsContract.depositEth({ value: _weiValue })
+  // const txReceipt = await tx.wait(1)
 }
 
 main()

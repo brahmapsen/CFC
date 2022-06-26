@@ -9,15 +9,17 @@ import networkMapping from "../constants/networkMapping.json"
 import NFTBox from "../components/NFTBox"
 import GET_ACTIVE_ITEMS from "../constants/subgraphQueries"
 import { useQuery } from "@apollo/client"
-import dynamic from "next/dynamic"
-const worldID = dynamic(() => import("@worldcoin/id"), { ssr: false })
+
+// import dynamic from "next/dynamic"
+// const worldID = dynamic(() => import("@worldcoin/id"), { ssr: false })
+import worldID from "@worldcoin/id"
 
 import { useNotification } from "web3uikit"
 
 import basicCFCNftAbi from "../constants/BasicCFCNft.json"
 
 //Should be replacec with call from the Basic NFT contract.
-const TOKEN_URI = "ipfs://QmSumRkgBY7PzatJ6ncYdZUdo3h6w6efHEvitUPArDaiB6"
+const TOKEN_URI = "ipfs://QmWHv6GtxS1HXqKbyFVQQ11ukAsJoQt893yZ5ngEAvCQqN"
 
 const WORLD_ACTION_ID = "wid_staging_d9aea2f0102f32491212d1b0846fc15f"
 
@@ -138,41 +140,40 @@ export default function DepositForm() {
   async function handleDeposit(data) {
     const token = data.data[0].inputResult
     const amtToApprove = data.data[1].inputResult
-    const nftToBeIssued = data.data[2].inputResult.length
-    console.log(" Token - ", token, " amt:", amtToApprove, " NFT Checkbox:", nftToBeIssued)
+    //const nftToBeIssued = data.data[2].inputResult.length
+    console.log(" Token - ", token, " amt:", amtToApprove)
+    //Mint NFT
+    console.log("MINTING NFT for the Donation.....................")
+    const tx = await mintNFT()
 
-    if (token === "PFS Token") {
-      approveOptions.params = {
-        amount: amtToApprove, //ethers.utils.parseUnits(amtToApprove, "ether").toString(),
-        spender: PFS_CONTRACT_ADDRESS,
-      }
-      console.log(`...approving...${amtToApprove}`)
-      const tx = await runContractFunction({
-        params: approveOptions,
-        onError: (error) => console.log(error),
-        onSuccess: () => {
-          handleApproveSuccess(approveOptions.params.amount)
-        },
-      })
-    } else {
-      //Deposit ETH
-      depositEthOptions.params = {
-        value: amtToApprove * 10e17,
-      }
-      console.log(`.......ETH depositing......${depositEthOptions.params.value}`)
+    // if (token === "CFC Token") {
+    //   approveOptions.params = {
+    //     amount: amtToApprove, //ethers.utils.parseUnits(amtToApprove, "ether").toString(),
+    //     spender: PFS_CONTRACT_ADDRESS,
+    //   }
+    //   console.log(`...approving...${amtToApprove}`)
+    //   const tx = await runContractFunction({
+    //     params: approveOptions,
+    //     onError: (error) => console.log(error),
+    //     onSuccess: () => {
+    //       handleApproveSuccess(approveOptions.params.amount)
+    //     },
+    //   })
+    // } else {
+    //   //Deposit ETH
+    //   depositEthOptions.params = {
+    //     value: amtToApprove * 10e17,
+    //   }
+    //   console.log(`.......ETH depositing......${depositEthOptions.params.value}`)
 
-      const tx = await runContractFunction({
-        params: depositEthOptions,
-        onError: (error) => console.log(error),
-        onSuccess: (tx) => {
-          handleSuccess(tx)
-        },
-      })
-    }
-    //
-    if (nftToBeIssued == 1) {
-      const tx = await mintNFT()
-    }
+    //   const tx = await runContractFunction({
+    //     params: depositEthOptions,
+    //     onError: (error) => console.log(error),
+    //     onSuccess: (tx) => {
+    //       handleSuccess(tx)
+    //     },
+    //   })
+    // }
   }
 
   async function handleApproveSuccess(amtToDeposit) {
@@ -239,7 +240,9 @@ export default function DepositForm() {
 
   // Probably could add some error handling
   const handleSuccess = async (tx) => {
+    console.log("HANDLE SUCCESS!!!!!!!!!!!!!!")
     if (chainString != 31337) {
+      console.log("WAIT 1 --------------------")
       await tx.wait(1)
     }
     handleNewNotification(tx)
@@ -254,9 +257,6 @@ export default function DepositForm() {
   }
 
   async function updateUI() {
-    const _name = await getContractName()
-    setContractName(_name)
-
     const _userBal = await getUserAsset()
     setUserDepositAmt(_userBal.toString())
 
@@ -271,17 +271,13 @@ export default function DepositForm() {
       updateUI()
       getWorldID()
     }
-  }, [isWeb3Enabled])
+  }, [isWeb3Enabled, userEthAmount])
 
   return (
     <Layout>
       <div id="world-id-container"></div>
+      <br />
       <div>
-        {" "}
-        <div>
-          <Input label="Contract Name:" name="contract-name" value={contractName} />{" "}
-        </div>{" "}
-        <br />
         <div>
           <Input
             label="Total CFC Token deposited in Contract:"
@@ -310,7 +306,7 @@ export default function DepositForm() {
               selectOptions: [
                 {
                   id: "PFST",
-                  label: "PFS Token",
+                  label: "CFC Token",
                 },
                 {
                   id: "eth",
@@ -331,37 +327,9 @@ export default function DepositForm() {
               value: "",
               key: "amountToStake",
             },
-            {
-              name: "issue-nft",
-              options: ["Do you like NFT to be issued?"],
-              type: "box",
-              value: "issueNft",
-            },
           ]}
           title="Donate!!!"
         ></Form>
-      </div>
-
-      <div>
-        {/* <Button
-          id="mint-nft"
-          onClick={mintNFT}
-          size="medium"
-          text="Mint NFT for Donation"
-          theme="primary"
-          type="button"
-        /> */}
-
-        {/* <NFT
-              address="0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB"
-              chain="eth"
-              fetchMetadata
-              tokenId="1"
-            />
-            <NFTBalance
-            address="0x951Eb8643E48A3B6d6d6AA7706B643AEE9B42f52"
-            chain="eth"
-            /> */}
       </div>
 
       <div className="container mx-auto">

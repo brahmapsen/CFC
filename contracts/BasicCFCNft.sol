@@ -4,7 +4,8 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract BasicCFCNft is ERC721 {
-  string public constant TOKEN_URI = "ipfs://QmSumRkgBY7PzatJ6ncYdZUdo3h6w6efHEvitUPArDaiB6";
+  //string public constant TOKEN_URI = "ipfs://QmSumRkgBY7PzatJ6ncYdZUdo3h6w6efHEvitUPArDaiB6";
+  string public constant TOKEN_URI = "ipfs://QmWHv6GtxS1HXqKbyFVQQ11ukAsJoQt893yZ5ngEAvCQqN";
   uint256 private s_tokenCounter;
 
   constructor() ERC721("Basic CFC NFT", "BCNFT") {

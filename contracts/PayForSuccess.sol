@@ -100,7 +100,7 @@ contract PayForSuccess {
   function depositAssets(uint256 amount, address assetAddress) public payable {
     UserInfo[msg.sender][assetAddress] += amount;
     IERC20(assetAddress).transferFrom(msg.sender, address(this), amount);
-    s_funders.push(msg.sender);
+    //s_funders.push(msg.sender);
 
     emit AssetReceived(msg.sender, amount, assetAddress, EventFlags.DEPOSITED);
   }
@@ -128,15 +128,15 @@ contract PayForSuccess {
   function depositEth() public payable {
     //IERC20(fakeTokenAddrForNativeCurrency).transferFrom(msg.sender, address(this), msg.value);
 
-    UserInfo[msg.sender][fakeTokenAddrForNativeCurrency] += msg.value;
+    //UserInfo[msg.sender][fakeTokenAddrForNativeCurrency] += msg.value;
     UserEthInfo[msg.sender] += msg.value;
-    s_funders.push(msg.sender);
-    emit AssetReceived(
-      msg.sender,
-      msg.value,
-      fakeTokenAddrForNativeCurrency,
-      EventFlags.DEPOSITED
-    );
+    //s_funders.push(msg.sender);
+    // emit AssetReceived(
+    //   msg.sender,
+    //   msg.value,
+    //   fakeTokenAddrForNativeCurrency,
+    //   EventFlags.DEPOSITED
+    // );
   }
 
   //

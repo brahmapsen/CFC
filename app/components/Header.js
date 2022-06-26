@@ -8,33 +8,26 @@ export default function Header() {
   return (
     <nav className="p-5 border-b-2 flex flex-row justify-between items-center">
       <h3 className="py-4 px-4 font-bold text-3xl">
-        <a href="http://localhost:3000/">CFC!</a>
+        <a href="http://localhost:3000/">
+          <img src="/cfc-logo.png" alt="cfclogo" />
+        </a>
       </h3>
       {isWeb3Enabled ? (
         <div className="flex flex-row items-center">
-          <Link href={`/result`}>
+          <Link href={`https://discover.molecule.to/`}>
             <a className={"ml-auto py-8 px-4"}>
               <h3>
-                <b>Post Result</b>
+                <b>Impact Investor IP-NFT Funding</b>
               </h3>
             </a>
           </Link>
-          <Link href={`/Fund`}>
-            <a className={"ml-auto py-8 px-4"}>
-              <h3>
-                <b>Fund Research</b>
-              </h3>
-            </a>
-          </Link>
-          <Link href={`/defi`}>
-            <a className={"ml-auto py-8 px-4"}>
-              <h6>
-                <b>Grow Fund</b>
-              </h6>
-            </a>
-          </Link>
+
           <Link href={`/DepositForm`}>
-            <a className="mr-4 p-6">Payer Deposit</a>
+            <h6>
+              <b>
+                <a className="mr-4 p-6">Open Source Pharma NFT</a>
+              </b>
+            </h6>
           </Link>
         </div>
       ) : (
