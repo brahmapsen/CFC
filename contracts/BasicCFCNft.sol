@@ -1,26 +1,47 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
-contract BasicCFCNft is ERC721 {
-  //string public constant TOKEN_URI = "ipfs://QmSumRkgBY7PzatJ6ncYdZUdo3h6w6efHEvitUPArDaiB6";
-  string public constant TOKEN_URI = "ipfs://QmWHv6GtxS1HXqKbyFVQQ11ukAsJoQt893yZ5ngEAvCQqN";
+contract BasicCFCNft is ERC721URIStorage {
   uint256 private s_tokenCounter;
+
+  //Keeps a mapping of all NFT tokenIDs to who it is issued to
+  mapping(uint256 => address) public s_requestIdToOwner;
+
+  //NFT issued
+  event NFTIssued(
+    address indexed to,
+    uint256 donatedAmount,
+    address donatedAsset,
+    uint256 tokenIndexId,
+    string indexed uri
+  );
 
   constructor() ERC721("Basic CFC NFT", "BCNFT") {
     s_tokenCounter = 0;
   }
 
-  function mintNft() public returns (uint256) {
-    _safeMint(msg.sender, s_tokenCounter);
+  function mintNft(
+    address senderAddress,
+    uint256 donatedAmount,
+    address donatedAsset,
+    string memory _tokenURI
+  ) public returns (uint256) {
     s_tokenCounter = s_tokenCounter + 1;
+
+    _safeMint(senderAddress, s_tokenCounter);
+    s_requestIdToOwner[s_tokenCounter] = senderAddress;
+    _setTokenURI(s_tokenCounter, _tokenURI);
+
+    emit NFTIssued(msg.sender, donatedAmount, donatedAsset, s_tokenCounter, _tokenURI);
+
     return s_tokenCounter;
   }
 
-  function tokenURI(uint256 tokenId) public view override returns (string memory) {
-    // require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-    return TOKEN_URI;
+  //Get the URI for the specific NFT
+  function getTokenURI(uint256 index) public view returns (string memory) {
+    return tokenURI(index);
   }
 
   function getTokenCounter() public view returns (uint256) {

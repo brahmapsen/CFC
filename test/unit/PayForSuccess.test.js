@@ -4,8 +4,8 @@ const { network, deployments, ethers, getNamedAccounts } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
 
 describe("PayForSuccess", function () {
-  let payForSuccess, payForSuccessFactory, user
-  const sendValue = ethers.utils.parseEther("1")
+  let payForSuccess, user, cfcToken
+  const sendValue = ethers.utils.parseEther("0.001")
   const zeroAddress = "0x0000000000000000000000000000000000000000"
 
   beforeEach(async function () {
@@ -13,11 +13,10 @@ describe("PayForSuccess", function () {
     user = deployer
     payForSuccessFactory = await ethers.getContractFactory("PayForSuccess")
     payForSuccess = await payForSuccessFactory.deploy(deployer)
-  })
 
-  // it("setup dummy", async function () {
-  //   console.log("DUMMY")
-  // })
+    let cfcTokenFactory = await ethers.getContractFactory("PayForSuccessToken")
+    cfcToken = await cfcTokenFactory.deploy()
+  })
 
   it("should display name", async () => {
     const contractName = await payForSuccess.getContractName()
@@ -25,12 +24,21 @@ describe("PayForSuccess", function () {
     assert.equal(contractName, expectedValue)
   })
 
-  it("test contract eth value", async () => {
+  it("test desposit eth value", async () => {
     await payForSuccess.depositEth({ value: sendValue })
     const resp = await payForSuccess.provider.getBalance(payForSuccess.address)
-    console.log("resp:", resp.toString())
+    console.log("PayForSuccess Contract ETH Balance:", resp.toString())
 
     const userAmt = await payForSuccess.UserEthInfo(user)
     console.log("User Amt:", userAmt.toString())
+    assert.equal(userAmt, "1000000000000000")
+  })
+
+  it("test deposit ERC20 token", async () => {
+    await cfcToken.approve(payForSuccess.address, "1000000000000000000", { gasLimit: 3e6 })
+    await payForSuccess.depositAssets("1000000000000000000", cfcToken.address)
+    const resp = await payForSuccess.getUserAsset(cfcToken.address)
+    console.log("resp:", resp.toString())
+    assert.equal(resp, "1000000000000000000")
   })
 })

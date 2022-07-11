@@ -6,29 +6,31 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract PayForSuccess {
   // Contract identification.
   address public immutable fakeTokenAddrForNativeCurrency = address(0);
+  string private constant GREATER_THAN_ZERO = "value should be greater than zero";
 
-  //PayForSuccess "vault" address: here is where we deposit and release tokens.
-  //address public PayForSuccess;
+  //Owners and admins.
   address public owner;
   address public admin;
 
-  // Store actor/users wallet balance. UserAddress->AssetAddress->Amount
+  // ERC20 Token Deposits - Store actor/users wallet balance. UserAddress->AssetAddress->Amount
   mapping(address => mapping(address => uint256)) public UserInfo;
+
+  //ETH deposits
   mapping(address => uint256) public UserEthInfo;
 
   //stores payer amount and URI for NFT issued to Payer
   struct Stake {
     uint256 amount; //amount contributed by Payer
-    string uri; //uri for the NFT issued to Payer
+    uint256 tokenIndex; //NFT TokenIndex issued to Payer
+    address assetAddress; //Asset donated
   }
-  mapping(address => mapping(address => Stake)) public Payers;
+  mapping(address => Stake) public NFTHolders;
 
-  address[] private s_funders;
+  address[] private s_donors;
 
   enum EventFlags {
     DEPOSITED,
     RELEASED,
-    NFTISSUED,
     RESULTRELEASED,
     RESULTSIGNED
   }
@@ -40,16 +42,9 @@ contract PayForSuccess {
     address indexed tokenAddress,
     EventFlags flag
   );
-  //NFT issued
-  event NFTIssued(
-    address indexed to,
-    uint256 amount,
-    address tokenAddress,
-    string indexed uri,
-    EventFlags flag
-  );
+
   //Clinical Submission Event
-  event ClinialResult(
+  event ClinicalResult(
     address indexed submitter,
     string indexed documentURI,
     uint32 clinicalTrialStage,
@@ -98,25 +93,32 @@ contract PayForSuccess {
    * we notify PFS contract providers/validators of transaction.
    */
   function depositAssets(uint256 amount, address assetAddress) public payable {
+    require(msg.value < 1, GREATER_THAN_ZERO);
+
+    if (UserInfo[msg.sender][assetAddress] < 0) {
+      s_donors.push(msg.sender);
+    }
+
     UserInfo[msg.sender][assetAddress] += amount;
     IERC20(assetAddress).transferFrom(msg.sender, address(this), amount);
-    //s_funders.push(msg.sender);
 
     emit AssetReceived(msg.sender, amount, assetAddress, EventFlags.DEPOSITED);
   }
 
   //updates NFT URI with the asset deposited
+  //one NFT issued per User
   function issueNFT(
     uint256 amount,
     address assetAddress,
-    string memory uri
+    uint256 tokenIndex
   ) public {
     Stake memory stake;
-    stake.amount = amount;
-    stake.uri = uri;
-    Payers[msg.sender][assetAddress] = stake;
 
-    emit NFTIssued(msg.sender, amount, assetAddress, uri, EventFlags.NFTISSUED);
+    stake.amount = amount;
+    stake.assetAddress = assetAddress;
+    stake.tokenIndex = tokenIndex;
+
+    NFTHolders[msg.sender] = stake;
   }
 
   /*
@@ -127,26 +129,43 @@ contract PayForSuccess {
    */
   function depositEth() public payable {
     //IERC20(fakeTokenAddrForNativeCurrency).transferFrom(msg.sender, address(this), msg.value);
-
     //UserInfo[msg.sender][fakeTokenAddrForNativeCurrency] += msg.value;
+
+    require(msg.value > 0, GREATER_THAN_ZERO);
+
+    if (UserEthInfo[msg.sender] < 0) {
+      s_donors.push(msg.sender);
+    }
+
     UserEthInfo[msg.sender] += msg.value;
-    //s_funders.push(msg.sender);
-    // emit AssetReceived(
-    //   msg.sender,
-    //   msg.value,
-    //   fakeTokenAddrForNativeCurrency,
-    //   EventFlags.DEPOSITED
-    // );
+
+    //emit asset received event
+    emit AssetReceived(
+      msg.sender,
+      msg.value,
+      fakeTokenAddrForNativeCurrency,
+      EventFlags.DEPOSITED
+    );
   }
 
-  //
-  function getFunder(uint256 index) public view returns (address) {
-    return s_funders[index];
+  //Return all funders list
+  function getDonors() public view returns (address[] memory) {
+    return s_donors;
+  }
+
+  //get the funder for the index
+  function getDonor(uint256 index) public view returns (address) {
+    return s_donors[index];
+  }
+
+  //get no of donors
+  function getDonorCount() public view returns (uint256 noOfDonors) {
+    return s_donors.length;
   }
 
   //Submit URI for the documents submitted towards clinical trial results
   function submitClinialResult(string calldata documentURI, uint32 clinicalTrialStage) public {
-    emit ClinialResult(msg.sender, documentURI, clinicalTrialStage, EventFlags.RESULTRELEASED);
+    emit ClinicalResult(msg.sender, documentURI, clinicalTrialStage, EventFlags.RESULTRELEASED);
   }
 
   //Signed transaction posted on net
@@ -179,8 +198,8 @@ contract PayForSuccess {
   ) public onlyOwner(msg.sender) {
     uint256 _userAssetBalance = UserInfo[msg.sender][assetAddress];
     require(_userAssetBalance >= amount, "The user doesn't have enough amount of this asset.");
-    IERC20(assetAddress).transferFrom(address(this), userAddress, amount);
     UserInfo[msg.sender][assetAddress] -= amount;
+    IERC20(assetAddress).transferFrom(address(this), userAddress, amount);
   }
 
   //

@@ -32,12 +32,6 @@ async function updateAbi() {
     payForSuccessToken.interface.format(ethers.utils.FormatTypes.json)
   )
 
-  const nftMarketplace = await ethers.getContract("NftMarketplace")
-  fs.writeFileSync(
-    `${frontEndAbiLocation}NftMarketplace.json`,
-    nftMarketplace.interface.format(ethers.utils.FormatTypes.json)
-  )
-
   const basicCFCNft = await ethers.getContract("BasicCFCNft")
   fs.writeFileSync(
     `${frontEndAbiLocation}BasicCFCNft.json`,
@@ -58,13 +52,11 @@ async function updateContractAddresses() {
     console.log("EmPTY file")
   }
 
-  const nftMarketplace = await ethers.getContract("NftMarketplace")
   const payForSuccess = await ethers.getContract("PayForSuccess")
   const payForSuccessToken = await ethers.getContract("PayForSuccessToken")
   const basicCFCNft = await ethers.getContract("BasicCFCNft")
 
   contractAddresses[chainId] = {
-    NftMarketplace: [nftMarketplace.address],
     PayForSuccess: [payForSuccess.address],
     PayForSuccessToken: [payForSuccessToken.address],
     BasicCFCNft: [basicCFCNft.address],

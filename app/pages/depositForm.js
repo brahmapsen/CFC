@@ -1,44 +1,37 @@
 import { useState, useEffect } from "react"
+import { useRouter } from "next/router"
 import { useMoralis, useWeb3Contract } from "react-moralis"
 import abi from "../constants/PayForSuccess.json"
 import tokenAbi from "../constants/PayForSuccessToken.json"
-import { NFT, NFTBalance, Form, Button, Checkbox, Input } from "web3uikit"
+import { NFT, NFTBalance, Form, Button, Checkbox, Input, useNotification } from "web3uikit"
 import { ethers } from "ethers"
-import Layout from "../components/Layout"
+
 import networkMapping from "../constants/networkMapping.json"
 import NFTBox from "../components/NFTBox"
 import GET_ACTIVE_ITEMS from "../constants/subgraphQueries"
 import { useQuery } from "@apollo/client"
-
-// import dynamic from "next/dynamic"
-// const worldID = dynamic(() => import("@worldcoin/id"), { ssr: false })
-import worldID from "@worldcoin/id"
-
-import { useNotification } from "web3uikit"
 
 import basicCFCNftAbi from "../constants/BasicCFCNft.json"
 
 //Should be replacec with call from the Basic NFT contract.
 const TOKEN_URI = "ipfs://QmWHv6GtxS1HXqKbyFVQQ11ukAsJoQt893yZ5ngEAvCQqN"
 
-const WORLD_ACTION_ID = "wid_staging_d9aea2f0102f32491212d1b0846fc15f"
-
 export default function DepositForm() {
+  const router = useRouter()
   const { chainId, isWeb3Enabled, account } = useMoralis()
   const chainString = chainId ? parseInt(chainId).toString() : "31337"
   console.log("CHAIN ID", chainId, chainString)
-  const marketplaceAddress = networkMapping[chainString].NftMarketplace[0]
 
   const dispatch = useNotification()
 
   const PFS_CONTRACT_ADDRESS = networkMapping[chainString].PayForSuccess[0]
-  console.log("PFS CONTRACT ADDRESS: ", PFS_CONTRACT_ADDRESS)
+  //console.log("PFS CONTRACT ADDRESS: ", PFS_CONTRACT_ADDRESS)
 
   const PFST_TOKEN_ADDRESS = networkMapping[chainString].PayForSuccessToken[0]
   //console.log("PFST TOKEN ADDRESS: ", PFST_TOKEN_ADDRESS)
 
   const BASIC_CFC_NFT_ADDRESS = networkMapping[chainString].BasicCFCNft[0]
-  console.log("PFST BASIC_CFC_NFT_ADDRESS ADDRESS: ", BASIC_CFC_NFT_ADDRESS)
+  //console.log("PFST BASIC_CFC_NFT_ADDRESS ADDRESS: ", BASIC_CFC_NFT_ADDRESS)
 
   const { loading, error, data: listedNfts } = useQuery(GET_ACTIVE_ITEMS)
 
@@ -48,25 +41,6 @@ export default function DepositForm() {
   const [totalTokenDeposited, setTotalTokenDeposited] = useState("0")
   const [userEthAmount, setUserEthAmount] = useState("")
   const [contractEthAmount, setContractEthAmount] = useState("")
-
-  async function getWorldID() {
-    if (!worldID.isInitialized()) {
-      worldID.init("world-id-container", {
-        //enable_telemetry: true,
-        action_id: WORLD_ACTION_ID, // <- use the address from the Developer Portal
-        signal: "CFC",
-      })
-    }
-
-    //verify
-    try {
-      const result = await worldID.enable() // <- Pass this `result` to your backend or smart contract (see below)
-      console.log("World ID verified successfully!")
-    } catch (failure) {
-      console.warn("World ID verification failed:", failure)
-      // Re-activate here so your end user can try again
-    }
-  }
 
   //view functions
   const { runContractFunction: getContractName } = useWeb3Contract({
@@ -80,18 +54,21 @@ export default function DepositForm() {
     abi: tokenAbi,
     contractAddress: PFST_TOKEN_ADDRESS,
     functionName: "approve",
+    gasLimit: "5000000",
   }
 
   let depositOptions = {
     abi: abi,
     contractAddress: PFS_CONTRACT_ADDRESS,
     functionName: "depositAssets",
+    gasLimit: "5000000",
   }
 
   let depositEthOptions = {
     abi: abi,
     contractAddress: PFS_CONTRACT_ADDRESS,
     functionName: "depositEth",
+    gasLimit: "5000000",
   }
 
   let nftIssuedOptions = {
@@ -140,40 +117,44 @@ export default function DepositForm() {
   async function handleDeposit(data) {
     const token = data.data[0].inputResult
     const amtToApprove = data.data[1].inputResult
-    //const nftToBeIssued = data.data[2].inputResult.length
     console.log(" Token - ", token, " amt:", amtToApprove)
+
+    if (token === "CFC Token") {
+      approveOptions.params = {
+        amount: amtToApprove, //ethers.utils.parseUnits(amtToApprove, "ether").toString(),
+        spender: PFS_CONTRACT_ADDRESS,
+      }
+      console.log(`...approving...${amtToApprove}`)
+      const tx = await runContractFunction({
+        params: approveOptions,
+        onError: (error) => console.log(error),
+        onSuccess: () => {
+          handleApproveSuccess(approveOptions.params.amount)
+        },
+      })
+    } else {
+      //DEPOSIT ETH
+      // depositEthOptions.params = {
+      //   value: amtToApprove * 10e17,
+      // }
+      depositEthOptions.msgValue = amtToApprove * 10e17
+
+      console.log(`.......ETH depositing......${depositEthOptions.msgValue}`)
+
+      const tx = await runContractFunction({
+        params: depositEthOptions,
+        onError: (error) => console.log(error),
+        onSuccess: (tx) => {
+          handleSuccess(tx)
+        },
+      })
+    }
+
     //Mint NFT
     console.log("MINTING NFT for the Donation.....................")
     const tx = await mintNFT()
 
-    // if (token === "CFC Token") {
-    //   approveOptions.params = {
-    //     amount: amtToApprove, //ethers.utils.parseUnits(amtToApprove, "ether").toString(),
-    //     spender: PFS_CONTRACT_ADDRESS,
-    //   }
-    //   console.log(`...approving...${amtToApprove}`)
-    //   const tx = await runContractFunction({
-    //     params: approveOptions,
-    //     onError: (error) => console.log(error),
-    //     onSuccess: () => {
-    //       handleApproveSuccess(approveOptions.params.amount)
-    //     },
-    //   })
-    // } else {
-    //   //Deposit ETH
-    //   depositEthOptions.params = {
-    //     value: amtToApprove * 10e17,
-    //   }
-    //   console.log(`.......ETH depositing......${depositEthOptions.params.value}`)
-
-    //   const tx = await runContractFunction({
-    //     params: depositEthOptions,
-    //     onError: (error) => console.log(error),
-    //     onSuccess: (tx) => {
-    //       handleSuccess(tx)
-    //     },
-    //   })
-    // }
+    //router.reload()
   }
 
   async function handleApproveSuccess(amtToDeposit) {
@@ -190,8 +171,6 @@ export default function DepositForm() {
         handleSuccess(tx)
       },
     })
-    //await tx.wait(1)
-    //console.log("Transaction confirmed by 1 block")
   }
 
   //User account BALANCE for Asset passed
@@ -228,6 +207,15 @@ export default function DepositForm() {
     setContractEthAmount(_amt)
   }
 
+  // Probably could add some error handling
+  const handleSuccess = async (tx) => {
+    if (chainString != 31337) {
+      await tx.wait(1)
+    }
+    handleNewNotification(tx)
+    updateUI()
+  }
+
   const handleNewNotification = () => {
     dispatch({
       type: "info",
@@ -238,17 +226,6 @@ export default function DepositForm() {
     })
   }
 
-  // Probably could add some error handling
-  const handleSuccess = async (tx) => {
-    console.log("HANDLE SUCCESS!!!!!!!!!!!!!!")
-    if (chainString != 31337) {
-      console.log("WAIT 1 --------------------")
-      await tx.wait(1)
-    }
-    handleNewNotification(tx)
-    updateUI()
-  }
-
   const handleError = async (tx) => {
     //await tx.wait(1)
     //updateUIValues()
@@ -257,100 +234,100 @@ export default function DepositForm() {
   }
 
   async function updateUI() {
+    console.log("UPDATE UI..................")
     const _userBal = await getUserAsset()
-    setUserDepositAmt(_userBal.toString())
+    if (typeof _userBal !== "undefined") {
+      setUserDepositAmt(_userBal.toString())
+    }
 
-    const _totalTokenBal = await getTotalTokenDeposited()
-    setTotalTokenDeposited(_totalTokenBal.toString())
+    // const _totalTokenBal = await getTotalTokenDeposited()
+    // setTotalTokenDeposited(_totalTokenBal.toString())
 
     getUserEth()
   }
 
   useEffect(() => {
-    if (isWeb3Enabled) {
-      updateUI()
-      getWorldID()
-    }
-  }, [isWeb3Enabled, userEthAmount])
+    updateUI()
+  }, [isWeb3Enabled])
 
   return (
-    <Layout>
-      <div id="world-id-container"></div>
-      <br />
-      <div>
-        <div>
-          <Input
-            label="Total CFC Token deposited in Contract:"
-            name="contract-total-cfc"
-            value={totalTokenDeposited}
-          />
-        </div>
-        <br />
-        <div>
-          <Input
-            label="CFC Token funded by User:"
-            name="contract-total-cfc"
-            value={userDepositAmt}
-          />
-        </div>
-        <br />
-        <div>
-          <Input label="ETH funded by User:" name="contract-total-cfc" value={userEthAmount} />
-        </div>
-        <br />
-        <Form
-          onSubmit={handleDeposit}
-          data={[
-            {
-              name: "Asset Type",
-              selectOptions: [
-                {
-                  id: "PFST",
-                  label: "CFC Token",
-                },
-                {
-                  id: "eth",
-                  label: "Native Ethereum",
-                },
-                {
-                  id: "DAI",
-                  label: "DAI Token",
-                },
-              ],
-              type: "select",
-              value: "",
-            },
-            {
-              inputWidth: "50%",
-              name: "Amount to deposit ",
-              type: "number",
-              value: "",
-              key: "amountToStake",
-            },
-          ]}
-          title="Donate!!!"
-        ></Form>
+    <div>
+      <div className="p-3">
+        <Input
+          label="Total CFC Token deposited in Contract:"
+          name="contract-total-cfc"
+          value={totalTokenDeposited}
+        />
       </div>
 
-      <div className="container mx-auto">
+      <div className="p-5">
+        <Input
+          label="CFC Token funded by User:"
+          name="contract-total-cfc"
+          value={userDepositAmt}
+        />
+      </div>
+      <br />
+      <div>
+        <Input label="ETH funded by User:" name="contract-total-cfc" value={userEthAmount} />
+      </div>
+      <br />
+      <Form
+        onSubmit={handleDeposit}
+        data={[
+          {
+            name: "Asset Type",
+            selectOptions: [
+              {
+                id: "PFST",
+                label: "CFC Token",
+              },
+              {
+                id: "eth",
+                label: "Native Ethereum",
+              },
+              {
+                id: "DAI",
+                label: "DAI Token",
+              },
+            ],
+            type: "select",
+            value: "Native Ethereumn",
+          },
+          {
+            inputWidth: "50%",
+            name: "Amount to deposit ",
+            type: "number",
+            value: ".001",
+            key: "amountToStake",
+          },
+        ]}
+        title="Donate!!!"
+        id="depositForm"
+      ></Form>
+    </div>
+  )
+}
+
+/* <div className="container mx-auto">
         <h1 className="py-4 px-4 font-bold text-2xl">NFT issued to the User</h1>
         <div className="flex flex-wrap">
           {isWeb3Enabled ? (
             loading || !listedNfts ? (
               <div>Loading...</div>
             ) : (
-              listedNfts.activeItems.map((nft, index) => {
+              listedNfts.nftissueds.map((nft, index) => {
                 //console.log(nft)
-                const { price, nftAddress, tokenId, seller } = nft
+                const { amount, uri, id, to } = nft
                 return (
                   <div key={index}>
                     <NFTBox
-                      price={price}
-                      nftAddress={nftAddress}
-                      tokenId={tokenId}
-                      marketplaceAddress={marketplaceAddress}
-                      seller={seller}
-                      key={`${nftAddress}${tokenId}`}
+                      price={amount}
+                      nftAddress={uri}
+                      tokenId={id}
+                      marketplaceAddress={to}
+                      seller={to}
+                      key={`${uri}${id}`}
                     />
                   </div>
                 )
@@ -360,7 +337,5 @@ export default function DepositForm() {
             <div>Web3 Currently Not Enabled</div>
           )}
         </div>
-      </div>
-    </Layout>
-  )
-}
+      </div> 
+  */

@@ -12,22 +12,17 @@ export default function Header() {
           <img src="/cfc-logo.png" alt="cfclogo" />
         </a>
       </h3>
+
       {isWeb3Enabled ? (
         <div className="flex flex-row items-center">
           <Link href={`https://discover.molecule.to/`}>
-            <a className={"ml-auto py-8 px-4"}>
-              <h3>
-                <b>Impact Investor IP-NFT Funding</b>
-              </h3>
+            <a target="_blank" className={"ml-auto py-8 px-4"} rel="noopener noreferrer">
+              Impact Investor IP-NFT Funding
             </a>
           </Link>
 
-          <Link href={`/DepositForm`}>
-            <h6>
-              <b>
-                <a className="mr-4 p-6">Open Source Pharma NFT</a>
-              </b>
-            </h6>
+          <Link href={`/depositForm`}>
+            <a className="mr-4 p-6">Open Source Pharma NFT</a>
           </Link>
         </div>
       ) : (

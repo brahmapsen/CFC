@@ -4,8 +4,8 @@ import React from "react"
 
 export default function Layout({ children }, isProfile) {
   return (
-    <React.Fragment>
+    <>
       <Header /> <div className="container pt-5 pb-2">{children}</div>
-    </React.Fragment>
+    </>
   )
 }

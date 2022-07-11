@@ -49,8 +49,8 @@ export default function NFTBox({ price, nftAddress, tokenId, marketplaceAddress,
     },
   })
 
-  async function updateUI() {
-    const tokenURI = await getTokenURI()
+  async function updateNFTBoxUI() {
+    const tokenURI = "ipfs://QmWHv6GtxS1HXqKbyFVQQ11ukAsJoQt893yZ5ngEAvCQqN" //await getTokenURI()
     console.log(`The TokenURI is ${tokenURI}`)
     // We are going to cheat a little here...
     if (tokenURI) {
@@ -73,7 +73,7 @@ export default function NFTBox({ price, nftAddress, tokenId, marketplaceAddress,
 
   useEffect(() => {
     if (isWeb3Enabled) {
-      updateUI()
+      updateNFTBoxUI()
     }
   }, [isWeb3Enabled])
 
